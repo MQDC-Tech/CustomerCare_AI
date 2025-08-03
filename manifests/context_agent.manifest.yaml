@@ -1,0 +1,4 @@
+agents:
+  - name: context_agent
+    entrypoint: agents/context_agent/agent.py
+    description: "Context agent for user personalization and session management"

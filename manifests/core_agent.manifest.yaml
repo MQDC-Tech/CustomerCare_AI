@@ -1,0 +1,16 @@
+agents:
+  - name: coordinator
+    entrypoint: agents/core_agent/coordinator/agent.py
+    description: "Core coordinator agent for orchestrating multi-agent workflows"
+    
+  - name: llm_agent
+    entrypoint: agents/core_agent/llm_agent/agent.py
+    description: "LLM agent for handling generic language model tasks"
+    
+  - name: memory_agent
+    entrypoint: agents/core_agent/memory_agent/agent.py
+    description: "Memory agent for conversation history and context storage"
+    
+  - name: notifications
+    entrypoint: agents/core_agent/notifications/agent.py
+    description: "Notifications agent for alerts and communication"

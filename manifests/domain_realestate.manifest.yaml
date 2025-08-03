@@ -1,0 +1,4 @@
+agents:
+  - name: domain_realestate
+    entrypoint: agents/domain_realestate/agent.py
+    description: "Real estate domain agent for CRM integration and lead management"
