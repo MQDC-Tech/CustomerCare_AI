@@ -133,6 +133,14 @@ def start_context_agent():
         return None
 
 
+def get_venv_python():
+    venv_path = project_root / "venv"
+    if os.name == "nt":  # Windows
+        return str(venv_path / "Scripts" / "python.exe")
+    else:  # Unix/Linux/macOS
+        return str(venv_path / "bin" / "python")
+
+
 def main():
     """Start all A2A agent services using official ADK to_a2a() method."""
     print("🌐 Starting A2A Agent Services (Official ADK to_a2a Method)")
@@ -142,15 +150,26 @@ def main():
     venv_python = setup_virtual_environment()
 
     agents = [
-        ("Domain Real Estate Agent", "agents/domain_realestate/expose_a2a.py", 8001),
-        ("Context Agent", "agents/context_agent/expose_a2a.py", 8002),
+        ("core_agent", 8001),
+        ("context_agent", 8002),
     ]
 
     processes = []
 
     # Start each agent's A2A service
-    for agent_name, expose_script, port in agents:
-        process = start_to_a2a_server(agent_name, expose_script, port, venv_python)
+    for agent_name, port in agents:
+        # Map agent names to their expose_a2a.py paths
+        agent_paths = {
+            "core_agent": "agents/core_agent/expose_a2a.py",
+            "context_agent": "agents/context_agent/expose_a2a.py"
+        }
+        
+        if agent_name not in agent_paths:
+            print(f"❌ Unknown agent: {agent_name}")
+            continue
+            
+        expose_script_path = agent_paths[agent_name]
+        process = start_to_a2a_server(agent_name, expose_script_path, port, venv_python)
         if process:
             processes.append((agent_name, process, port))
 
@@ -169,6 +188,20 @@ def main():
     with open(pid_file, "w") as f:
         for agent_name, process, port in processes:
             f.write(f"{agent_name}:{process.pid}\n")
+    
+    print("\n" + "=" * 60)
+    print("🏠 DOMAIN AGENT (Main Orchestrator) SETUP")
+    print("=" * 60)
+    print("The Domain Agent with Coordinator is now ready to run via ADK web.")
+    print("\nTo start the Domain Agent (main entry point):")
+    print(f"  cd {project_root}")
+    print("  adk web agents/domain_realestate")
+    print("\nThis will start the Domain Agent on http://localhost:8080")
+    print("The Domain Agent will orchestrate requests to:")
+    print("  • Core Agent (A2A): http://localhost:8001")
+    print("  • Context Agent (A2A): http://localhost:8002")
+    print("\n🎯 Architecture Summary:")
+    print("  User → Domain Agent (ADK Web) → Core/Context Agents (A2A)")
 
     print(f"\n📝 Process IDs saved to: {pid_file}")
     print("\n🛑 To stop all A2A services, run: python scripts/stop_a2a_agents.py")

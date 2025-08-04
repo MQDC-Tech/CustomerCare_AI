@@ -13,30 +13,44 @@
 
 ## 🏗️ Architecture Overview
 
-### Three-Tier Agent System:
+### **New Coordinator-Driven Multi-Agent Architecture:**
 
-- **🧠 Core Agent**: Orchestration, memory management, notifications, and workflow coordination
-- **👤 Context Agent**: User personalization, session management, and profile handling  
-- **🏠 Domain Real Estate Agent**: Property search, lead generation, CRM integration, and client management
+- **🏠 Domain Real Estate Agent** (Main Orchestrator): 
+  - Primary entry point via `adk web` interface
+  - Contains coordinator logic for multi-agent orchestration
+  - Handles real estate queries, property search, CRM integration
+  - Routes requests to Core and Context agents via A2A protocol
+
+- **🧠 Core Agent** (A2A Service - Port 8001):
+  - Shared services: LLM, memory management, notifications
+  - Exposed via official ADK A2A protocol
+  - Handles general queries, text processing, logging
+
+- **👤 Context Agent** (A2A Service - Port 8002):
+  - User personalization, session management, profile handling
+  - Exposed via official ADK A2A protocol  
+  - Stores and retrieves user preferences and context
 
 ## 📂 Project Structure
 
 ```
 ├── agents/
 │   ├── core_agent/
-│   │   ├── coordinator/agent.py      # Workflow orchestration
+│   │   ├── agent.py                  # Core services (LLM, memory, notifications)
+│   │   ├── expose_a2a.py             # A2A service exposure script
 │   │   ├── llm_agent/agent.py        # Language model tasks
 │   │   ├── memory_agent/agent.py     # Conversation memory
 │   │   └── notifications/agent.py    # Alerts & communication
 │   │
 │   ├── domain_realestate/
-│   │   ├── agent.py                  # Real estate domain agent
+│   │   ├── agent.py                  # Main orchestrator + real estate domain
 │   │   └── tools/
 │   │       ├── crm_connector.py      # CRM integration
 │   │       └── lead_router.py        # Lead qualification & routing
 │   │
 │   └── context_agent/
 │       ├── agent.py                  # Context management
+│       ├── expose_a2a.py             # A2A service exposure script
 │       └── profile_manager.py        # User profiles
 │
 ├── manifests/
@@ -89,65 +103,112 @@ GOOGLE_CLOUD_PROJECT=your_project_id
 GOOGLE_CLOUD_LOCATION=us-central1
 ```
 
-### 3. Testing Options
+### 3. **New Testing Approach (Updated Architecture)**
 
-#### 🎮 Option A: ADK Playground (Interactive Web UI)
+#### 🚀 **Step 1: Start A2A Services**
 
-**Start the playground:**
+**Start Core and Context agents as A2A services:**
 ```bash
-./local_playground/start_playground.sh
+# Start A2A agents (Core on port 8001, Context on port 8002)
+python scripts/start_a2a_agents.py
+```
+
+**Verify agents are running:**
+```bash
+# Check agent cards are accessible
+curl http://localhost:8001/.well-known/agent.json  # Core Agent
+curl http://localhost:8002/.well-known/agent.json  # Context Agent
+```
+
+#### 🎮 **Step 2: Start Main Orchestrator**
+
+**Start Domain Agent (main entry point):**
+```bash
+# Start Domain Real Estate Agent with coordinator
+adk web agents/domain_realestate
 ```
 
 **Access the web interface:**
 - Open browser: `http://localhost:8080`
-- Select `core_agent` from dropdown
-- Test with sample queries:
+- The Domain Agent now contains the coordinator logic
+- Test the new orchestration flow:
 
-```
-I'm interested in buying a 3-bedroom house in downtown area under $500k. Please help me find properties and create a lead for this request.
-```
+### 🧪 **Step 3: Test Multi-Agent Orchestration**
 
-**Stop the playground:**
+**Test these validated scenarios in the web interface:**
+
+#### ✅ **Preference Storage (Context Agent A2A):**
+```
+Remember that I prefer 3-bedroom houses
+```
+**Expected**: "✅ Got it! I've saved your preference for 3-bedroom houses. I'll remember this for future property searches and recommendations."
+
+#### ✅ **Property Search (Context Agent A2A):**
+```
+Find me 3-bedroom houses under $500k
+```
+**Expected**: Preference logged and search criteria saved
+
+#### ✅ **General Queries (Core Agent A2A):**
+```
+What's the weather today?
+```
+**Expected**: LLM-generated response from Core Agent
+
+#### ✅ **Preference Retrieval (Context Agent A2A):**
+```
+What are my saved preferences?
+```
+**Expected**: Detailed list of user preferences including housing preferences
+
+### 🛑 **Step 4: Stop Services**
+
+**Stop all services:**
 ```bash
-./local_playground/stop_playground.sh
+# Stop Domain Agent (Ctrl+C in terminal)
+# Then stop A2A services
+python scripts/stop_a2a_agents.py
 ```
 
-#### 🤖 Option B: A2A Agent Testing (Real Inter-Agent Communication)
+## 🔧 **Troubleshooting**
 
-**Start A2A agents:**
+### **Port Conflicts**
+If you get "address already in use" errors:
 ```bash
-./local_playground/start_a2a_agents.sh
+# Kill processes on specific ports
+lsof -ti :8001 | xargs kill -9  # Core Agent
+lsof -ti :8002 | xargs kill -9  # Context Agent
+
+# Or use the stop script
+python scripts/stop_a2a_agents.py
 ```
 
-**Run comprehensive A2A tests:**
+### **Agent Cards Not Loading**
+Verify agent cards are accessible:
 ```bash
-source venv/bin/activate
-python local_playground/test_a2a_agents.py
+curl http://localhost:8001/.well-known/agent.json
+curl http://localhost:8002/.well-known/agent.json
 ```
 
-**Monitor agent logs:**
+### **A2A Communication Issues**
+Check logs for HTTP 200 responses:
 ```bash
-# Core Agent logs
 tail -f logs/core_agent_a2a.log
-
-# Domain Real Estate Agent logs  
-tail -f logs/domain_realestate_a2a.log
-
-# Context Agent logs
 tail -f logs/context_agent_a2a.log
 ```
 
-**Stop A2A agents:**
-```bash
-./local_playground/stop_a2a_agents.sh
+## 🏗️ **Architecture Flow**
+
 ```
-
-#### 🧪 Option C: Individual Agent Testing
-
-**Test single agents:**
-```bash
-# Test Core Agent
-adk run agents/core_agent/coordinator/ --reload
+User Request → Domain Agent (adk web :8080)
+                     ↓ (Coordinator Logic)
+              ┌─────────────────────┐
+              ↓                     ↓
+    Core Agent (A2A :8001)    Context Agent (A2A :8002)
+    • LLM Services            • User Preferences  
+    • Memory Management       • Session Management
+    • Notifications           • Profile Storage
+```
 
 # Test Domain Real Estate Agent
 adk run agents/domain_realestate/ --reload

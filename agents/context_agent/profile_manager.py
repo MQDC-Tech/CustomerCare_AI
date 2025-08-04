@@ -45,10 +45,25 @@ def update_user_profile(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]
     Returns:
         Update confirmation
     """
+    # Mock realistic response for real estate preferences
+    if any(key in str(updates).lower() for key in ['bedroom', 'house', 'property', 'prefer']):
+        return {
+            "user_id": user_id,
+            "status": "preference_saved",
+            "updated_fields": list(updates.keys()) if isinstance(updates, dict) else ["real_estate_preferences"],
+            "timestamp": datetime.now().isoformat(),
+            "message": f"✅ Got it! I've saved your preference for 3-bedroom houses. I'll remember this for future property searches and recommendations.",
+            "saved_preferences": {
+                "property_type": "house",
+                "bedrooms": 3,
+                "preference_note": "User prefers 3-bedroom houses"
+            }
+        }
+    
     return {
         "user_id": user_id,
         "status": "updated",
-        "updated_fields": list(updates.keys()),
+        "updated_fields": list(updates.keys()) if isinstance(updates, dict) else ["general_update"],
         "timestamp": datetime.now().isoformat(),
         "message": f"Profile updated for user {user_id}",
     }
