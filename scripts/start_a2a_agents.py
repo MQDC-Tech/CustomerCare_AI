@@ -141,47 +141,86 @@ def get_venv_python():
         return str(venv_path / "bin" / "python")
 
 
-def main():
-    """Start all A2A agent services using official ADK to_a2a() method."""
-    print("🌐 Starting A2A Agent Services (Official ADK to_a2a Method)")
-    print("=" * 50)
-
-    # Set up virtual environment and install dependencies
-    venv_python = setup_virtual_environment()
-
-    agents = [
-        ("core_agent", 8001),
-        ("context_agent", 8002),
-    ]
-
-    processes = []
-
-    # Start each agent's A2A service
-    for agent_name, port in agents:
-        # Map agent names to their expose_a2a.py paths
-        agent_paths = {
-            "core_agent": "agents/core_agent/expose_a2a.py",
-            "context_agent": "agents/context_agent/expose_a2a.py"
-        }
+def start_domain_agent_web(venv_python):
+    """Start Domain Agent via ADK web interface."""
+    try:
+        print("\n🏠 Starting Domain Agent (ADK Web Interface on port 8080)...")
         
-        if agent_name not in agent_paths:
-            print(f"❌ Unknown agent: {agent_name}")
-            continue
+        # Change to project root and start ADK web
+        cmd = [
+            venv_python, "-m", "google.adk.cli", 
+            "web", "agents/domain_realestate",
+            "--port", "8080"
+        ]
+        
+        # Start ADK web in background
+        process = subprocess.Popen(
+            cmd,
+            cwd=project_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        # Give it time to start
+        time.sleep(3)
+        
+        # Check if process is still running
+        if process.poll() is None:
+            print("✅ Domain Agent (ADK Web) started successfully")
+            return process
+        else:
+            stdout, stderr = process.communicate()
+            print(f"❌ Failed to start Domain Agent: {stderr}")
+            return None
             
-        expose_script_path = agent_paths[agent_name]
-        process = start_to_a2a_server(agent_name, expose_script_path, port, venv_python)
-        if process:
-            processes.append((agent_name, process, port))
+    except Exception as e:
+        print(f"❌ Error starting Domain Agent: {e}")
+        return None
 
+
+def main():
+    """Start complete multi-agent system: A2A services + Domain Agent web interface."""
+    print("🚀 Starting Complete Multi-Agent System...")
+    print("=" * 50)
+    
+    # Setup virtual environment and dependencies
+    venv_python = setup_virtual_environment()
+    
+    processes = []
+    
+    # Start Core Agent (A2A service)
+    print("\n📋 Starting Core Agent (A2A service on port 8001)...")
+    core_process = start_to_a2a_server("core_agent", "agents/core_agent/expose_a2a.py", 8001, venv_python)
+    if core_process:
+        processes.append(("core_agent", core_process, 8001))
+        time.sleep(2)  # Allow time for startup
+    
+    # Start Context Agent (A2A service)
+    print("\n👤 Starting Context Agent (A2A service on port 8002)...")
+    context_process = start_to_a2a_server("context_agent", "agents/context_agent/expose_a2a.py", 8002, venv_python)
+    if context_process:
+        processes.append(("context_agent", context_process, 8002))
+        time.sleep(2)  # Allow time for startup
+    
+    # Start Domain Agent (ADK Web Interface)
+    domain_process = start_domain_agent_web(venv_python)
+    if domain_process:
+        processes.append(("domain_agent_web", domain_process, 8080))
+        time.sleep(2)  # Allow time for startup
+    
     if not processes:
-        print("❌ No A2A services started successfully")
-        sys.exit(1)
-
-    print(f"\n✅ Started {len(processes)} A2A services")
-    print("\nAgent endpoints:")
+        print("❌ Failed to start any services")
+        return
+    
+    print(f"\n✅ Started {len(processes)} services")
+    print("\n🌐 System Endpoints:")
     for agent_name, process, port in processes:
-        print(f"  • {agent_name}: http://localhost:{port}")
-        print(f"    Agent Card: http://localhost:{port}/.well-known/agent.json")
+        if agent_name == "domain_agent_web":
+            print(f"  🏠 Domain Agent (Web UI): http://localhost:{port}")
+        else:
+            print(f"  🤖 {agent_name}: http://localhost:{port}")
+            print(f"      Agent Card: http://localhost:{port}/.well-known/agent.json")
 
     # Save PIDs for cleanup
     pid_file = project_root / "a2a_pids.txt"
@@ -190,22 +229,24 @@ def main():
             f.write(f"{agent_name}:{process.pid}\n")
     
     print("\n" + "=" * 60)
-    print("🏠 DOMAIN AGENT (Main Orchestrator) SETUP")
+    print("🎯 MULTI-AGENT SYSTEM READY")
     print("=" * 60)
-    print("The Domain Agent with Coordinator is now ready to run via ADK web.")
-    print("\nTo start the Domain Agent (main entry point):")
-    print(f"  cd {project_root}")
-    print("  adk web agents/domain_realestate")
-    print("\nThis will start the Domain Agent on http://localhost:8080")
-    print("The Domain Agent will orchestrate requests to:")
-    print("  • Core Agent (A2A): http://localhost:8001")
-    print("  • Context Agent (A2A): http://localhost:8002")
-    print("\n🎯 Architecture Summary:")
-    print("  User → Domain Agent (ADK Web) → Core/Context Agents (A2A)")
+    print("✅ All services started successfully!")
+    print("\n🌐 Access the system:")
+    print("   👉 Open browser: http://localhost:8080")
+    print("\n🏗️ Architecture:")
+    print("   User → Domain Agent (Web :8080) → A2A Services")
+    print("   • Core Agent (A2A): http://localhost:8001")
+    print("   • Context Agent (A2A): http://localhost:8002")
+    print("\n🧪 Test these scenarios:")
+    print('   • "Remember that I prefer 3-bedroom houses"')
+    print('   • "Find me 3-bedroom houses under $500k"')
+    print('   • "What\'s the weather today?"')
+    print('   • "What are my saved preferences?"')
 
     print(f"\n📝 Process IDs saved to: {pid_file}")
-    print("\n🛑 To stop all A2A services, run: python scripts/stop_a2a_agents.py")
-    print("🧪 To test A2A communication, run: python test_refactored_a2a.py")
+    print("\n🛑 To stop all services, run: python3 scripts/stop_a2a_agents.py")
+    print("\n⚠️  Keep this terminal open - services are running in background")
 
 
 if __name__ == "__main__":

@@ -47,17 +47,18 @@ def kill_processes_on_port(port):
 
 
 def main():
-    """Stop all running A2A agent services."""
-    print("🛑 Stopping ADK-native A2A Agent Services")
+    """Stop all running multi-agent system services."""
+    print("🛑 Stopping Complete Multi-Agent System")
     print("=" * 50)
 
     # Kill processes on specific ports
     print("\n🔍 Checking and stopping processes on agent ports...")
-    kill_processes_on_port(8001)  # Core Agent
-    kill_processes_on_port(8002)  # Context Agent
+    kill_processes_on_port(8001)  # Core Agent (A2A)
+    kill_processes_on_port(8002)  # Context Agent (A2A)
+    kill_processes_on_port(8080)  # Domain Agent (ADK Web)
     
-    # Also try to kill any uvicorn processes
-    print("\n🔍 Stopping uvicorn processes...")
+    # Also try to kill any uvicorn processes (A2A services)
+    print("\n🔍 Stopping uvicorn A2A processes...")
     try:
         result = subprocess.run(
             ["pkill", "-f", "uvicorn.*expose_a2a"],
@@ -70,12 +71,27 @@ def main():
             print("ℹ️  No uvicorn A2A processes found")
     except Exception as e:
         print(f"⚠️  Could not stop uvicorn processes: {e}")
+    
+    # Kill any ADK web processes
+    print("\n🔍 Stopping ADK web processes...")
+    try:
+        result = subprocess.run(
+            ["pkill", "-f", "google.adk.cli.*web"],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            print("✅ Stopped ADK web processes")
+        else:
+            print("ℹ️  No ADK web processes found")
+    except Exception as e:
+        print(f"⚠️  Could not stop ADK web processes: {e}")
 
     project_root = Path(__file__).parent.parent
     pid_file = project_root / "a2a_pids.txt"
+    stopped_count = 0
 
     if pid_file.exists():
-        stopped_count = 0
         print("\n🔍 Stopping processes from PID file...")
         
         # Read and stop each process
@@ -104,11 +120,16 @@ def main():
     else:
         print("ℹ️  No PID file found")
 
-    # Clean up PID file
-    pid_file.unlink()
+    # Clean up PID file if it exists
+    if pid_file.exists():
+        pid_file.unlink()
 
-    print(f"\n🎯 Stopped {stopped_count} A2A services")
-    print("✅ All A2A agent services have been stopped")
+    print(f"\n🎯 Stopped {stopped_count} services from PID file")
+    print("✅ All multi-agent system services have been stopped")
+    print("\n🌐 System Status:")
+    print("   • Core Agent (A2A :8001): 🛑 Stopped")
+    print("   • Context Agent (A2A :8002): 🛑 Stopped")
+    print("   • Domain Agent (Web :8080): 🛑 Stopped")
 
 
 if __name__ == "__main__":

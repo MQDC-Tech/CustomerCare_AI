@@ -105,35 +105,26 @@ GOOGLE_CLOUD_LOCATION=us-central1
 
 ### 3. **New Testing Approach (Updated Architecture)**
 
-#### 🚀 **Step 1: Start A2A Services**
+#### 🚀 **Step 1: Start Complete Multi-Agent System**
 
-**Start Core and Context agents as A2A services:**
+**Start all services with unified script:**
 ```bash
-# Start A2A agents (Core on port 8001, Context on port 8002)
-python scripts/start_a2a_agents.py
+# Start A2A services + Domain Agent web interface (all in one)
+python3 scripts/start_a2a_agents.py
 ```
 
-**Verify agents are running:**
-```bash
-# Check agent cards are accessible
-curl http://localhost:8001/.well-known/agent.json  # Core Agent
-curl http://localhost:8002/.well-known/agent.json  # Context Agent
-```
+**This single command will:**
+- ✅ Set up virtual environment and install dependencies
+- ✅ Start Core Agent (A2A service on port 8001)
+- ✅ Start Context Agent (A2A service on port 8002)  
+- ✅ Start Domain Agent web interface (port 8080)
+- ✅ All services use the same virtual environment (no dependency issues)
 
-#### 🎮 **Step 2: Start Main Orchestrator**
+**Access the system:**
+- 🌐 **Open browser**: `http://localhost:8080`
+- 🏗️ **Architecture**: User → Domain Agent (Web) → A2A Services
 
-**Start Domain Agent (main entry point):**
-```bash
-# Start Domain Real Estate Agent with coordinator
-adk web agents/domain_realestate
-```
-
-**Access the web interface:**
-- Open browser: `http://localhost:8080`
-- The Domain Agent now contains the coordinator logic
-- Test the new orchestration flow:
-
-### 🧪 **Step 3: Test Multi-Agent Orchestration**
+### 🧪 **Step 2: Test Multi-Agent Orchestration**
 
 **Test these validated scenarios in the web interface:**
 
@@ -161,13 +152,12 @@ What are my saved preferences?
 ```
 **Expected**: Detailed list of user preferences including housing preferences
 
-### 🛑 **Step 4: Stop Services**
+### 🛑 **Step 3: Stop Services**
 
 **Stop all services:**
 ```bash
-# Stop Domain Agent (Ctrl+C in terminal)
-# Then stop A2A services
-python scripts/stop_a2a_agents.py
+# Single command stops everything
+python3 scripts/stop_a2a_agents.py
 ```
 
 ## 🔧 **Troubleshooting**
