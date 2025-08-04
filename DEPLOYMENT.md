@@ -24,8 +24,9 @@ gcloud config set project YOUR_PROJECT_ID
 ```bash
 # Enable necessary Google Cloud APIs
 gcloud services enable aiplatform.googleapis.com
+gcloud services enable storage.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
-gcloud services enable run.googleapis.com
+gcloud services enable agent-engine.googleapis.com
 gcloud services enable artifactregistry.googleapis.com
 ```
 

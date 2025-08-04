@@ -1,0 +1,47 @@
+{
+  "name": "Domain Real Estate Agent",
+  "description": "Specialized agent for real estate operations including property search, CRM management, and lead routing",
+  "version": "1.0.0",
+  "skills": [
+    {
+      "id": "property_search",
+      "name": "Property Search",
+      "description": "Search for properties based on user criteria like location, price range, property type, etc.",
+      "examples": [
+        "Find 3-bedroom houses in San Francisco under $2M",
+        "Show me condos in downtown Seattle",
+        "Search for commercial properties in Austin"
+      ]
+    },
+    {
+      "id": "crm_management",
+      "name": "CRM Management", 
+      "description": "Manage customer relationships, leads, and property inquiries",
+      "examples": [
+        "Add new lead for John Smith interested in downtown condos",
+        "Update client preferences for luxury properties",
+        "Track follow-up activities for recent property showings"
+      ]
+    },
+    {
+      "id": "lead_routing",
+      "name": "Lead Routing",
+      "description": "Route leads to appropriate agents and manage lead distribution",
+      "examples": [
+        "Route high-value lead to senior agent",
+        "Assign new inquiry to available agent",
+        "Distribute leads based on agent specialization"
+      ]
+    }
+  ],
+  "capabilities": {
+    "streaming": true,
+    "async": true,
+    "tools": ["property_search_tool", "crm_connector_tool", "lead_router_tool"]
+  },
+  "metadata": {
+    "agent_type": "domain_agent",
+    "specialization": "real_estate",
+    "deployment_target": "vertex_agent_engine"
+  }
+}

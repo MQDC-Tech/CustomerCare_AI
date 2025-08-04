@@ -1,0 +1,57 @@
+{
+  "name": "Context Agent",
+  "description": "Manages user personalization, session context, and profile information for enhanced customer experience",
+  "version": "1.0.0",
+  "skills": [
+    {
+      "id": "user_profiling",
+      "name": "User Profiling",
+      "description": "Create and manage detailed user profiles including preferences, history, and behavior patterns",
+      "examples": [
+        "Create profile for new user with property preferences",
+        "Update user preferences based on recent interactions",
+        "Analyze user behavior patterns for personalization"
+      ]
+    },
+    {
+      "id": "session_management",
+      "name": "Session Management",
+      "description": "Track and manage user sessions, conversation context, and interaction history",
+      "examples": [
+        "Maintain conversation context across multiple interactions",
+        "Track user journey through property search process",
+        "Store session data for follow-up conversations"
+      ]
+    },
+    {
+      "id": "personalization",
+      "name": "Personalization",
+      "description": "Provide personalized recommendations and experiences based on user context",
+      "examples": [
+        "Recommend properties based on user preferences",
+        "Customize communication style for individual users",
+        "Provide personalized market insights"
+      ]
+    },
+    {
+      "id": "preference_management",
+      "name": "Preference Management",
+      "description": "Manage user preferences for properties, communication, and service delivery",
+      "examples": [
+        "Set preferred property types and price ranges",
+        "Configure notification preferences",
+        "Manage communication channel preferences"
+      ]
+    }
+  ],
+  "capabilities": {
+    "streaming": true,
+    "async": true,
+    "tools": ["user_profile_tool", "session_tracker_tool", "preference_manager_tool", "personalization_engine_tool", "context_retrieval_tool", "profile_updater_tool", "session_analytics_tool"]
+  },
+  "metadata": {
+    "agent_type": "context_agent",
+    "specialization": "personalization_and_context",
+    "deployment_target": "vertex_agent_engine"
+  }
+}

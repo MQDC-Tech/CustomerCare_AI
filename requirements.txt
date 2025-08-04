@@ -1,6 +1,6 @@
 # Core ADK and Google Cloud dependencies
-google-adk>=0.1.0
-a2a-sdk>=0.1.0
+google-adk>=1.9.0
+a2a-sdk==0.2.16
 httpx>=0.24.0
 google-generativeai>=0.3.0
 google-cloud-aiplatform>=1.38.0

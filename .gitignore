@@ -83,3 +83,5 @@ coverage.xml
 
 # Documentation builds
 docs/_build/
+
+a2a_pids.txt

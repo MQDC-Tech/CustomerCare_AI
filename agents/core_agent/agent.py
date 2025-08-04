@@ -4,25 +4,25 @@ This agent orchestrates the coordinator, llm_agent, memory_agent, and notificati
 """
 
 from google.adk import Agent
-from google.adk.tools import FunctionTool, AgentTool
+from google.adk.tools import AgentTool, FunctionTool
+
+# Import the coordinator root agent (A2A orchestrator)
+from .coordinator.agent import root_agent as coordinator_agent
 
 # Import functions from sub-agents
-from .coordinator.agent import orchestrate_workflow, route_request
-from .llm_agent.agent import generate_reply, summarize_text, rewrite_text
-from .memory_agent.agent import store_memory, retrieve_memory, update_memory, delete_memory
-from .notifications.agent import send_notification, schedule_notification, get_notification_status, send_alert
-
-
+from .llm_agent.agent import generate_reply, rewrite_text, summarize_text
+from .memory_agent.agent import delete_memory, retrieve_memory, store_memory, update_memory
+from .notifications.agent import get_notification_status, schedule_notification, send_alert, send_notification
 
 
 def coordinate_core_services(request: str, service_type: str = "auto") -> str:
     """
     Coordinate between core services based on the request type.
-    
+
     Args:
         request: The user request or task
         service_type: Type of service needed (auto, llm, memory, notification, orchestration)
-    
+
     Returns:
         Response from the appropriate core service
     """
@@ -36,7 +36,7 @@ def coordinate_core_services(request: str, service_type: str = "auto") -> str:
             service_type = "orchestration"
         else:
             service_type = "llm"
-    
+
     if service_type == "llm":
         return generate_reply(request)
     elif service_type == "memory":
@@ -54,11 +54,6 @@ def get_core_status() -> str:
     return "Core Agent: All services (LLM, Memory, Notifications, Coordinator) are operational"
 
 
-
-
-
-
-
 # Create the main core agent
 root_agent = Agent(
     name="core_agent",
@@ -67,46 +62,47 @@ root_agent = Agent(
         # Main coordination function
         FunctionTool(coordinate_core_services),
         FunctionTool(get_core_status),
-        
-
-        
         # LLM functions
         FunctionTool(generate_reply),
         FunctionTool(summarize_text),
         FunctionTool(rewrite_text),
-        
         # Memory functions
         FunctionTool(store_memory),
         FunctionTool(retrieve_memory),
         FunctionTool(update_memory),
         FunctionTool(delete_memory),
-        
         # Notification functions
         FunctionTool(send_notification),
         FunctionTool(schedule_notification),
         FunctionTool(get_notification_status),
         FunctionTool(send_alert),
-        
-        # Orchestration functions
-        FunctionTool(orchestrate_workflow),
-        FunctionTool(route_request),
+        # Coordinator agent tool (for A2A orchestration)
+        AgentTool(coordinator_agent),
     ],
-    instruction="""
-    You are the Core Agent responsible for coordinating all core platform services:
+    instruction="""    You are the Core Agent responsible for coordinating all core platform services.
     
-    1. **LLM Services**: Text generation, summarization, rewriting
-    2. **Memory Management**: Store, retrieve, and search conversation context
-    3. **Notifications**: Send alerts and manage notification workflows
-    4. **Orchestration**: Coordinate multi-agent workflows and route requests
+    IMPORTANT: For real estate queries, user preferences, or multi-agent workflows, 
+    you MUST use the coordinator agent tool to delegate to specialized agents.
     
-    Your role is to:
-    - Automatically detect which core service is needed based on user requests
-    - Coordinate between different core services when complex tasks require multiple services
-    - Provide a unified interface for all core platform functionality
-    - Maintain context and state across different service interactions
+    **When to use the coordinator agent tool:**
+    - Real estate queries (property search, listings, CRM, market info)
+    - User preferences and personalization (saving preferences, profiles)
+    - Multi-agent workflows requiring coordination
     
-    When users interact with you, analyze their request and route it to the appropriate core service,
-    or coordinate multiple services if needed. Always provide helpful, accurate responses while
-    maintaining the context of the conversation through memory services.
-    """
+    **Available services:**
+    1. **LLM Services**: Text generation, summarization, rewriting (use direct functions)
+    2. **Memory Management**: Store, retrieve conversation context (use direct functions)
+    3. **Notifications**: Send alerts and notifications (use direct functions)
+    4. **A2A Orchestration**: Real estate and user preference tasks (use coordinator agent tool)
+    
+    **Your workflow:**
+    1. Analyze the user's request
+    2. If it's about real estate or user preferences → use coordinator agent tool
+    3. If it's about LLM, memory, or notifications → use direct function tools
+    4. Always provide complete responses from the appropriate service
+    
+    Remember: The coordinator agent tool connects to specialized remote agents for 
+    real estate and personalization tasks. Use it for any property-related or 
+    user preference queries.
+    """,
 )

@@ -1,41 +1,49 @@
-"""Context Agent for user personalization and session management."""
+"""Context Agent for user personalization and session management. This is a server-side A2A agent following ADK standards."""
+
+import os
+import sys
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 from google.adk import Agent
 from google.adk.tools import FunctionTool
-import sys
-import os
+
 from .profile_manager import (
     fetch_user_profile,
-    update_user_profile,
+    get_personalization_data,
     get_user_preferences,
     update_user_context,
-    get_personalization_data
+    update_user_profile,
 )
-from typing import Dict, Any, Optional
-from datetime import datetime
 
 
-def manage_session(user_id: str, action: str = "start", session_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def manage_session(
+    user_id: str, action: Optional[str] = None, session_data: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Manage user session lifecycle.
-    
+
     Args:
         user_id: Unique user identifier
         action: Session action (start, update, end)
         session_data: Optional session data
-        
+
     Returns:
         Session management result
     """
     session_id = f"session_{user_id}_{datetime.now().timestamp()}"
-    
+
+    # Default action to "start" if None
+    if action is None:
+        action = "start"
+
     if action == "start":
         return {
             "session_id": session_id,
             "user_id": user_id,
             "status": "started",
             "timestamp": datetime.now().isoformat(),
-            "message": f"Session started for user {user_id}"
+            "message": f"Session started for user {user_id}",
         }
     elif action == "update":
         return {
@@ -44,7 +52,7 @@ def manage_session(user_id: str, action: str = "start", session_data: Optional[D
             "status": "updated",
             "data": session_data or {},
             "timestamp": datetime.now().isoformat(),
-            "message": f"Session updated for user {user_id}"
+            "message": f"Session updated for user {user_id}",
         }
     elif action == "end":
         return {
@@ -52,24 +60,24 @@ def manage_session(user_id: str, action: str = "start", session_data: Optional[D
             "user_id": user_id,
             "status": "ended",
             "timestamp": datetime.now().isoformat(),
-            "message": f"Session ended for user {user_id}"
+            "message": f"Session ended for user {user_id}",
         }
 
 
 def personalize_response(user_id: str, base_response: str) -> Dict[str, Any]:
     """
     Personalize a response based on user preferences.
-    
+
     Args:
         user_id: Unique user identifier
         base_response: Base response to personalize
-        
+
     Returns:
         Personalized response
     """
     personalization = get_personalization_data(user_id)
     style = personalization.get("personalization", {}).get("communication_style", "professional")
-    
+
     # Simple personalization logic - in production this would be more sophisticated
     if style == "casual":
         personalized = f"Hey! {base_response} 😊"
@@ -77,13 +85,13 @@ def personalize_response(user_id: str, base_response: str) -> Dict[str, Any]:
         personalized = f"Dear User, {base_response}. Best regards."
     else:  # professional
         personalized = f"Hello, {base_response}"
-    
+
     return {
         "user_id": user_id,
         "original_response": base_response,
         "personalized_response": personalized,
         "style_applied": style,
-        "message": f"Response personalized for user {user_id}"
+        "message": f"Response personalized for user {user_id}",
     }
 
 
@@ -98,7 +106,7 @@ root_agent = Agent(
         FunctionTool(update_user_context),
         FunctionTool(get_personalization_data),
         FunctionTool(manage_session),
-        FunctionTool(personalize_response)
+        FunctionTool(personalize_response),
     ],
     instruction="""
     You are the Context Agent responsible for:
@@ -109,5 +117,5 @@ root_agent = Agent(
     5. Providing user-specific customization
     
     Always consider user preferences and context when processing requests.
-    """
+    """,
 )

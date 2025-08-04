@@ -4,7 +4,8 @@ Deploy agents as separate remote services with automatic discovery
 """
 
 import os
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
 import yaml
 
 
@@ -13,7 +14,7 @@ def create_distributed_deployment_configs():
     Create deployment configurations for running agents as separate remote services.
     Each agent tier can be deployed independently and will discover others via A2A protocol.
     """
-    
+
     # Configuration for distributed agent deployment
     deployment_configs = {
         "core_agents": {
@@ -21,50 +22,32 @@ def create_distributed_deployment_configs():
             "agents": ["coordinator", "llm_agent", "memory_agent", "notifications"],
             "discovery_mode": "automatic",
             "communication_protocol": "A2A",
-            "scaling": {
-                "min_instances": 1,
-                "max_instances": 5,
-                "auto_scale": True
-            },
+            "scaling": {"min_instances": 1, "max_instances": 5, "auto_scale": True},
             "endpoints": {
                 "coordinator": "https://core-coordinator-service.run.app",
-                "llm_agent": "https://core-llm-service.run.app", 
+                "llm_agent": "https://core-llm-service.run.app",
                 "memory_agent": "https://core-memory-service.run.app",
-                "notifications": "https://core-notifications-service.run.app"
-            }
+                "notifications": "https://core-notifications-service.run.app",
+            },
         },
-        
         "context_agent": {
             "deployment_type": "remote_service",
             "agents": ["context_agent"],
             "discovery_mode": "automatic",
             "communication_protocol": "A2A",
-            "scaling": {
-                "min_instances": 1,
-                "max_instances": 3,
-                "auto_scale": True
-            },
-            "endpoints": {
-                "context_agent": "https://context-service.run.app"
-            }
+            "scaling": {"min_instances": 1, "max_instances": 3, "auto_scale": True},
+            "endpoints": {"context_agent": "https://context-service.run.app"},
         },
-        
         "domain_agents": {
-            "deployment_type": "remote_service", 
+            "deployment_type": "remote_service",
             "agents": ["domain_realestate"],
             "discovery_mode": "automatic",
             "communication_protocol": "A2A",
-            "scaling": {
-                "min_instances": 2,
-                "max_instances": 10,
-                "auto_scale": True
-            },
-            "endpoints": {
-                "domain_realestate": "https://domain-realestate-service.run.app"
-            }
-        }
+            "scaling": {"min_instances": 2, "max_instances": 10, "auto_scale": True},
+            "endpoints": {"domain_realestate": "https://domain-realestate-service.run.app"},
+        },
     }
-    
+
     return deployment_configs
 
 
@@ -72,7 +55,7 @@ def create_agent_discovery_config():
     """
     Create agent discovery configuration for automatic service discovery.
     """
-    
+
     discovery_config = {
         "discovery": {
             "mode": "automatic",
@@ -80,54 +63,40 @@ def create_agent_discovery_config():
             "registry": {
                 "type": "google_cloud_service_directory",
                 "project_id": "${GOOGLE_CLOUD_PROJECT}",
-                "region": "us-central1"
+                "region": "us-central1",
             },
-            "health_check": {
-                "enabled": True,
-                "interval_seconds": 30,
-                "timeout_seconds": 10
-            },
-            "load_balancing": {
-                "strategy": "round_robin",
-                "failover": True,
-                "circuit_breaker": True
-            }
+            "health_check": {"enabled": True, "interval_seconds": 30, "timeout_seconds": 10},
+            "load_balancing": {"strategy": "round_robin", "failover": True, "circuit_breaker": True},
         },
-        
         "agent_registry": {
             "core_agents": {
                 "service_name": "core-agents-service",
                 "namespace": "customer-care",
-                "agents": ["coordinator", "llm_agent", "memory_agent", "notifications"]
+                "agents": ["coordinator", "llm_agent", "memory_agent", "notifications"],
             },
             "context_agent": {
-                "service_name": "context-agent-service", 
+                "service_name": "context-agent-service",
                 "namespace": "customer-care",
-                "agents": ["context_agent"]
+                "agents": ["context_agent"],
             },
             "domain_agents": {
                 "service_name": "domain-agents-service",
-                "namespace": "customer-care", 
-                "agents": ["domain_realestate"]
-            }
+                "namespace": "customer-care",
+                "agents": ["domain_realestate"],
+            },
         },
-        
         "communication": {
             "a2a_protocol": {
                 "enabled": True,
                 "encryption": True,
                 "authentication": "service_account",
                 "timeout_seconds": 30,
-                "retry_attempts": 3
+                "retry_attempts": 3,
             },
-            "service_mesh": {
-                "enabled": True,
-                "istio_integration": True,
-                "traffic_management": True
-            }
-        }
+            "service_mesh": {"enabled": True, "istio_integration": True, "traffic_management": True},
+        },
     }
-    
+
     return discovery_config
 
 
@@ -135,7 +104,7 @@ def create_cloud_run_deployment_yamls():
     """
     Create Cloud Run deployment configurations for each agent tier.
     """
-    
+
     # Core Agents Cloud Run Service
     core_agents_yaml = {
         "apiVersion": "serving.knative.dev/v1",
@@ -145,8 +114,8 @@ def create_cloud_run_deployment_yamls():
             "namespace": "customer-care",
             "annotations": {
                 "run.googleapis.com/ingress": "internal-and-cloud-load-balancing",
-                "run.googleapis.com/execution-environment": "gen2"
-            }
+                "run.googleapis.com/execution-environment": "gen2",
+            },
         },
         "spec": {
             "template": {
@@ -154,102 +123,92 @@ def create_cloud_run_deployment_yamls():
                     "annotations": {
                         "autoscaling.knative.dev/minScale": "1",
                         "autoscaling.knative.dev/maxScale": "5",
-                        "run.googleapis.com/cpu-throttling": "false"
+                        "run.googleapis.com/cpu-throttling": "false",
                     }
                 },
                 "spec": {
                     "containerConcurrency": 100,
-                    "containers": [{
-                        "image": "gcr.io/${PROJECT_ID}/core-agents:latest",
-                        "ports": [{"containerPort": 8080}],
-                        "env": [
-                            {"name": "ADK_AGENT_MANIFEST", "value": "manifests/core_agent.manifest.yaml"},
-                            {"name": "A2A_DISCOVERY_ENABLED", "value": "true"},
-                            {"name": "GOOGLE_CLOUD_PROJECT", "valueFrom": {"secretKeyRef": {"name": "project-config", "key": "project_id"}}}
-                        ],
-                        "resources": {
-                            "limits": {"cpu": "2", "memory": "4Gi"},
-                            "requests": {"cpu": "1", "memory": "2Gi"}
+                    "containers": [
+                        {
+                            "image": "gcr.io/${PROJECT_ID}/core-agents:latest",
+                            "ports": [{"containerPort": 8080}],
+                            "env": [
+                                {"name": "ADK_AGENT_MANIFEST", "value": "manifests/core_agent.manifest.yaml"},
+                                {"name": "A2A_DISCOVERY_ENABLED", "value": "true"},
+                                {
+                                    "name": "GOOGLE_CLOUD_PROJECT",
+                                    "valueFrom": {"secretKeyRef": {"name": "project-config", "key": "project_id"}},
+                                },
+                            ],
+                            "resources": {"limits": {"cpu": "2", "memory": "4Gi"}, "requests": {"cpu": "1", "memory": "2Gi"}},
                         }
-                    }]
-                }
+                    ],
+                },
             }
-        }
+        },
     }
-    
-    # Context Agent Cloud Run Service  
+
+    # Context Agent Cloud Run Service
     context_agent_yaml = {
         "apiVersion": "serving.knative.dev/v1",
-        "kind": "Service", 
-        "metadata": {
-            "name": "context-agent-service",
-            "namespace": "customer-care"
-        },
+        "kind": "Service",
+        "metadata": {"name": "context-agent-service", "namespace": "customer-care"},
         "spec": {
             "template": {
                 "metadata": {
-                    "annotations": {
-                        "autoscaling.knative.dev/minScale": "1",
-                        "autoscaling.knative.dev/maxScale": "3"
-                    }
+                    "annotations": {"autoscaling.knative.dev/minScale": "1", "autoscaling.knative.dev/maxScale": "3"}
                 },
                 "spec": {
-                    "containers": [{
-                        "image": "gcr.io/${PROJECT_ID}/context-agent:latest",
-                        "ports": [{"containerPort": 8080}],
-                        "env": [
-                            {"name": "ADK_AGENT_MANIFEST", "value": "manifests/context_agent.manifest.yaml"},
-                            {"name": "A2A_DISCOVERY_ENABLED", "value": "true"}
-                        ]
-                    }]
-                }
+                    "containers": [
+                        {
+                            "image": "gcr.io/${PROJECT_ID}/context-agent:latest",
+                            "ports": [{"containerPort": 8080}],
+                            "env": [
+                                {"name": "ADK_AGENT_MANIFEST", "value": "manifests/context_agent.manifest.yaml"},
+                                {"name": "A2A_DISCOVERY_ENABLED", "value": "true"},
+                            ],
+                        }
+                    ]
+                },
             }
-        }
+        },
     }
-    
+
     # Domain Agent Cloud Run Service
     domain_agent_yaml = {
-        "apiVersion": "serving.knative.dev/v1", 
+        "apiVersion": "serving.knative.dev/v1",
         "kind": "Service",
-        "metadata": {
-            "name": "domain-realestate-service",
-            "namespace": "customer-care"
-        },
+        "metadata": {"name": "domain-realestate-service", "namespace": "customer-care"},
         "spec": {
             "template": {
                 "metadata": {
-                    "annotations": {
-                        "autoscaling.knative.dev/minScale": "2",
-                        "autoscaling.knative.dev/maxScale": "10"
-                    }
+                    "annotations": {"autoscaling.knative.dev/minScale": "2", "autoscaling.knative.dev/maxScale": "10"}
                 },
                 "spec": {
-                    "containers": [{
-                        "image": "gcr.io/${PROJECT_ID}/domain-realestate:latest",
-                        "ports": [{"containerPort": 8080}],
-                        "env": [
-                            {"name": "ADK_AGENT_MANIFEST", "value": "manifests/domain_realestate.manifest.yaml"},
-                            {"name": "A2A_DISCOVERY_ENABLED", "value": "true"},
-                            {"name": "A2A_REMOTE_AGENTS", "value": "context_agent,llm_agent,memory_agent,notifications"}
-                        ]
-                    }]
-                }
+                    "containers": [
+                        {
+                            "image": "gcr.io/${PROJECT_ID}/domain-realestate:latest",
+                            "ports": [{"containerPort": 8080}],
+                            "env": [
+                                {"name": "ADK_AGENT_MANIFEST", "value": "manifests/domain_realestate.manifest.yaml"},
+                                {"name": "A2A_DISCOVERY_ENABLED", "value": "true"},
+                                {"name": "A2A_REMOTE_AGENTS", "value": "context_agent,llm_agent,memory_agent,notifications"},
+                            ],
+                        }
+                    ]
+                },
             }
-        }
+        },
     }
-    
-    return {
-        "core_agents": core_agents_yaml,
-        "context_agent": context_agent_yaml, 
-        "domain_agent": domain_agent_yaml
-    }
+
+    return {"core_agents": core_agents_yaml, "context_agent": context_agent_yaml, "domain_agent": domain_agent_yaml}
 
 
 def create_dockerfile_for_distributed_deployment():
     """
     Create Dockerfiles for containerizing each agent tier.
     """
-    
+
     # Base Dockerfile for all agents
     base_dockerfile = """
 FROM python:3.11-slim
@@ -281,7 +240,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
 # Start agent service
 CMD ["adk", "serve", "--manifest", "${ADK_AGENT_MANIFEST}", "--port", "8080", "--host", "0.0.0.0"]
 """
-    
+
     return base_dockerfile
 
 
@@ -289,7 +248,7 @@ def create_deployment_scripts():
     """
     Create deployment scripts for distributed agent setup.
     """
-    
+
     # Deploy script
     deploy_script = """#!/bin/bash
 set -e
@@ -336,7 +295,7 @@ gcloud run deploy domain-realestate-service \\
 echo "✅ Distributed deployment complete!"
 echo "🔗 Agents will automatically discover each other via A2A protocol"
 """
-    
+
     return deploy_script
 
 
@@ -344,7 +303,7 @@ def create_agent_discovery_test():
     """
     Create test script to verify agent discovery and communication.
     """
-    
+
     test_script = """
 import asyncio
 import aiohttp
@@ -426,13 +385,13 @@ async def test_agent_discovery():
 if __name__ == "__main__":
     asyncio.run(test_agent_discovery())
 """
-    
+
     return test_script
 
 
 if __name__ == "__main__":
     print("🏗️  Creating Distributed Multi-Agent Deployment Configuration")
-    
+
     # Create deployment configs
     configs = create_distributed_deployment_configs()
     discovery_config = create_agent_discovery_config()
@@ -440,13 +399,13 @@ if __name__ == "__main__":
     dockerfile = create_dockerfile_for_distributed_deployment()
     deploy_script = create_deployment_scripts()
     test_script = create_agent_discovery_test()
-    
+
     print(f"✅ Distributed deployment configuration created!")
     print(f"📊 Agent Tiers: {len(configs)}")
     print(f"🔗 A2A Protocol: Enabled with automatic discovery")
     print(f"☁️  Cloud Run Services: {len(cloud_run_yamls)}")
     print(f"🧪 Discovery Tests: Ready")
-    
+
     print(f"\\n🚀 Ready for distributed deployment:")
     print(f"   1. Each agent tier runs as separate Cloud Run service")
     print(f"   2. Automatic service discovery via A2A protocol")
